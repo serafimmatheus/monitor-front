@@ -23,7 +23,8 @@ import { useSync } from "./_hook/use-sync";
 
 export default function HomePage() {
   const { logout } = useAuth();
-  const { summary, hasPendingSync, refetch } = useClients();
+  const { summary, hasPendingSync, refetch, isLoading: isClientsLoading } =
+    useClients();
   const { planInfo, isLoading: isPlanLoading, refetch: refetchPlan } =
     usePlanLimits();
   const { sync, isSyncing, message, error: syncError, clearMessage } = useSync(
@@ -42,6 +43,10 @@ export default function HomePage() {
   }>({ message: null, error: null });
 
   function getSyncDisabledReason() {
+    if (!isClientsLoading && summary.totalCnpj === 0) {
+      return "Para sincronizar, e necessario ter pelo menos 1 cliente.";
+    }
+
     if (!planInfo) {
       return undefined;
     }
@@ -57,7 +62,7 @@ export default function HomePage() {
     return undefined;
   }
 
-  const canSync = planInfo?.canSync ?? false;
+  const canSync = (planInfo?.canSync ?? false) && summary.totalCnpj > 0;
   const allowImport = planInfo?.allowImport ?? false;
   const syncDisabledReason = getSyncDisabledReason();
   const importDisabledReason = allowImport
