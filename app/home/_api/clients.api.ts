@@ -9,13 +9,13 @@ export interface Client {
 }
 
 export async function getClients() {
-  const { data } = await api.get<Client[]>("/api/clients");
+  const { data } = await api.get<Client[]>("/clients");
   return data;
 }
 
 export async function syncClients() {
   const { data } = await api.post<{ queued: number; message: string }>(
-    "/api/sync",
+    "/sync",
   );
   return data;
 }

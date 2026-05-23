@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import { getMe, login as loginRequest } from "@/app/home/_api/auth.api";
+import { getMe, login as loginRequest, logoutRequest } from "@/app/home/_api/auth.api";
 
 export interface User {
   id: string;
@@ -66,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    logoutRequest().catch(() => undefined);
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
