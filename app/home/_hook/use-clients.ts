@@ -11,6 +11,8 @@ const EMPTY_SUMMARY: ClientsSummary = {
   pendentes: 0,
   baixadas: 0,
   inaptos: 0,
+  suspensas: 0,
+  erros: 0,
   totalCnpj: 0,
   pendingCnpj: 0,
   hasPendingSync: false,

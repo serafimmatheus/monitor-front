@@ -47,6 +47,8 @@ export interface ClientsSummary {
   pendentes: number;
   baixadas: number;
   inaptos: number;
+  suspensas: number;
+  erros: number;
   totalCnpj: number;
   pendingCnpj: number;
   hasPendingSync: boolean;

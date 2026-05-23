@@ -1,6 +1,13 @@
 "use client";
 
-import { Archive, CheckCircle2, MoreHorizontal, XCircle } from "lucide-react";
+import {
+  AlertCircle,
+  Archive,
+  CheckCircle2,
+  MoreHorizontal,
+  PauseCircle,
+  XCircle,
+} from "lucide-react";
 import type { ClientsSummary } from "../_api/clients.api";
 
 type StatsCardsProps = {
@@ -54,7 +61,7 @@ function StatCard({
 
 export function StatsCards({ summary }: StatsCardsProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       <StatCard
         label="ATIVOS"
         value={summary.ativos}
@@ -66,7 +73,11 @@ export function StatsCards({ summary }: StatsCardsProps) {
       <StatCard
         label="PENDENTES"
         value={summary.pendentes}
-        badge={`${summary.pendentes} aguardando`}
+        badge={
+          summary.pendentes > 0
+            ? `${summary.pendentes} aguardando`
+            : "Nenhum"
+        }
         icon={<MoreHorizontal className="size-5 text-amber-600" />}
         iconClassName="bg-amber-50"
         badgeClassName="bg-amber-50 text-amber-700"
@@ -82,8 +93,24 @@ export function StatsCards({ summary }: StatsCardsProps) {
       <StatCard
         label="INAPTOS"
         value={summary.inaptos}
-        badge="Crítico"
+        badge={summary.inaptos > 0 ? "Crítico" : "Nenhum"}
         icon={<XCircle className="size-5 text-red-600" />}
+        iconClassName="bg-red-50"
+        badgeClassName="bg-red-50 text-red-700"
+      />
+      <StatCard
+        label="SUSPENSAS"
+        value={summary.suspensas}
+        badge={summary.suspensas > 0 ? "Atenção" : "Nenhuma"}
+        icon={<PauseCircle className="size-5 text-orange-600" />}
+        iconClassName="bg-orange-50"
+        badgeClassName="bg-orange-50 text-orange-700"
+      />
+      <StatCard
+        label="ERROS"
+        value={summary.erros}
+        badge={summary.erros > 0 ? "Revisar" : "Nenhum"}
+        icon={<AlertCircle className="size-5 text-red-600" />}
         iconClassName="bg-red-50"
         badgeClassName="bg-red-50 text-red-700"
       />
