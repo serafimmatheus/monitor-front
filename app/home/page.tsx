@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Upload } from "lucide-react";
 import { AuthProtect } from "@/components/auth-protect";
 import { Button } from "@/components/ui/button";
@@ -24,8 +24,16 @@ import { useSync } from "./_hook/use-sync";
 
 export default function HomePage() {
   const { user, logout } = useAuth();
-  const { clients, isLoading, error, refetch } = useClients();
-  const { sync, isSyncing, message, error: syncError, clearMessage } = useSync();
+  const [isSyncActive, setIsSyncActive] = useState(false);
+  const { clients, isLoading, error, refetch } = useClients(isSyncActive);
+  const { sync, isSyncing, message, error: syncError, clearMessage } = useSync(
+    (queued) => {
+      refetch();
+      if (queued > 0) {
+        setIsSyncActive(true);
+      }
+    },
+  );
 
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -35,6 +43,19 @@ export default function HomePage() {
     message: string | null;
     error: string | null;
   }>({ message: null, error: null });
+
+  useEffect(() => {
+    if (!isSyncActive) return;
+
+    const hasPendingCnpj = clients.some(
+      (client) =>
+        client.documentType === "CNPJ" && client.status === "PENDENTE",
+    );
+
+    if (!hasPendingCnpj) {
+      setIsSyncActive(false);
+    }
+  }, [clients, isSyncActive]);
 
   function handleEdit(client: Client) {
     setSelectedClient(client);
