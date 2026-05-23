@@ -30,8 +30,40 @@ export interface ImportClientsResult {
   errors: { row: number; message: string }[];
 }
 
-export async function getClients() {
-  const { data } = await api.get<Client[]>("/clients");
+export interface ClientsPagination {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface ListClientsResult {
+  data: Client[];
+  pagination: ClientsPagination;
+}
+
+export interface ClientsSummary {
+  ativos: number;
+  pendentes: number;
+  inaptos: number;
+  totalCnpj: number;
+  pendingCnpj: number;
+  hasPendingSync: boolean;
+}
+
+export interface ListClientsParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}
+
+export async function getClients(params: ListClientsParams = {}) {
+  const { data } = await api.get<ListClientsResult>("/clients", { params });
+  return data;
+}
+
+export async function getClientsSummary() {
+  const { data } = await api.get<ClientsSummary>("/clients/summary");
   return data;
 }
 

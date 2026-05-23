@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PaginationEllipsis } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -28,17 +28,43 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import type { Client } from "../_api/clients.api";
+import { useClientsTable } from "../_hook/use-clients-table";
 import { formatDocument } from "../_utils/format-document";
 import { StatusBadge } from "./status-badge";
 
-const PAGE_SIZE = 10;
-
 const COMPANY_ICONS = [Building2, Factory, ShoppingCart];
 
+function getVisiblePages(
+  currentPage: number,
+  totalPages: number,
+): (number | "ellipsis")[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages: (number | "ellipsis")[] = [1];
+
+  if (currentPage > 3) {
+    pages.push("ellipsis");
+  }
+
+  const start = Math.max(2, currentPage - 1);
+  const end = Math.min(totalPages - 1, currentPage + 1);
+
+  for (let page = start; page <= end; page++) {
+    pages.push(page);
+  }
+
+  if (currentPage < totalPages - 2) {
+    pages.push("ellipsis");
+  }
+
+  pages.push(totalPages);
+  return pages;
+}
+
 type ClientsTableProps = {
-  clients: Client[];
-  isLoading: boolean;
-  error: string | null;
+  refreshToken?: number;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
 };
@@ -58,36 +84,26 @@ function formatUpdatedAt(dateStr: string) {
 }
 
 export function ClientsTable({
-  clients,
-  isLoading,
-  error,
+  refreshToken,
   onEdit,
   onDelete,
 }: ClientsTableProps) {
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const {
+    clients,
+    pagination,
+    isLoading,
+    error,
+    search,
+    setSearch,
+    setPage,
+  } = useClientsTable({ refreshToken });
 
-  const filteredClients = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return clients;
+  const { page: currentPage, total, totalPages, pageSize } = pagination;
+  const startItem = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, total);
+  const visiblePages = getVisiblePages(currentPage, totalPages);
 
-    return clients.filter((client) => {
-      const document = formatDocument(client.document, client.documentType);
-      return (
-        client.name.toLowerCase().includes(query) ||
-        document.toLowerCase().includes(query)
-      );
-    });
-  }, [clients, search]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredClients.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const paginatedClients = filteredClients.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
-  );
-
-  if (isLoading) {
+  if (isLoading && clients.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
         <Skeleton className="mb-4 h-6 w-40" />
@@ -100,18 +116,13 @@ export function ClientsTable({
     );
   }
 
-  if (error) {
+  if (error && clients.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
         <p className="text-sm text-destructive">{error}</p>
       </div>
     );
   }
-
-  const pageNumbers = Array.from(
-    { length: Math.min(3, totalPages) },
-    (_, i) => i + 1,
-  );
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm">
@@ -125,10 +136,7 @@ export function ClientsTable({
             <Input
               placeholder="Buscar CNPJ ou Razão..."
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setSearch(e.target.value)}
               className="h-9 w-full pl-8 sm:w-64"
             />
           </div>
@@ -156,7 +164,15 @@ export function ClientsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {paginatedClients.length === 0 ? (
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <TableRow key={index}>
+                <TableCell colSpan={4} className="py-4">
+                  <Skeleton className="h-10 w-full" />
+                </TableCell>
+              </TableRow>
+            ))
+          ) : clients.length === 0 ? (
             <TableRow>
               <TableCell
                 colSpan={4}
@@ -166,7 +182,7 @@ export function ClientsTable({
               </TableCell>
             </TableRow>
           ) : (
-            paginatedClients.map((client, index) => {
+            clients.map((client, index) => {
               const Icon = COMPANY_ICONS[index % COMPANY_ICONS.length];
               const { formatted, relative } = formatUpdatedAt(client.updatedAt);
               const document = formatDocument(
@@ -237,44 +253,56 @@ export function ClientsTable({
 
       <div className="flex flex-col items-center justify-between gap-3 border-t border-border px-5 py-4 sm:flex-row">
         <p className="text-sm text-muted-foreground">
-          Mostrando {paginatedClients.length} de{" "}
-          {filteredClients.length.toLocaleString("pt-BR")} resultados
+          {total === 0
+            ? "Nenhum resultado"
+            : `Mostrando ${startItem.toLocaleString("pt-BR")}–${endItem.toLocaleString("pt-BR")} de ${total.toLocaleString("pt-BR")} resultados`}
         </p>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={currentPage <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            aria-label="Página anterior"
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-          {pageNumbers.map((pageNum) => (
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1">
             <Button
-              key={pageNum}
               variant="ghost"
               size="icon-sm"
-              onClick={() => setPage(pageNum)}
-              className={cn(
-                "size-8 rounded-full text-sm",
-                currentPage === pageNum &&
-                  "bg-foreground text-background hover:bg-foreground/90 hover:text-background",
-              )}
+              disabled={currentPage <= 1 || isLoading}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              aria-label="Página anterior"
             >
-              {pageNum}
+              <ChevronLeft className="size-4" />
             </Button>
-          ))}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={currentPage >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            aria-label="Próxima página"
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
+            {visiblePages.map((pageNum, index) =>
+              pageNum === "ellipsis" ? (
+                <PaginationEllipsis key={`ellipsis-${index}`} />
+              ) : (
+                <Button
+                  key={pageNum}
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={isLoading}
+                  onClick={() => setPage(pageNum)}
+                  aria-label={`Página ${pageNum}`}
+                  aria-current={currentPage === pageNum ? "page" : undefined}
+                  className={cn(
+                    "size-8 rounded-full text-sm",
+                    currentPage === pageNum &&
+                      "bg-foreground text-background hover:bg-foreground/90 hover:text-background",
+                  )}
+                >
+                  {pageNum}
+                </Button>
+              ),
+            )}
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              disabled={currentPage >= totalPages || isLoading}
+              onClick={() =>
+                setPage((current) => Math.min(totalPages, current + 1))
+              }
+              aria-label="Próxima página"
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

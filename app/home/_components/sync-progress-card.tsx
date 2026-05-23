@@ -2,40 +2,38 @@
 
 import { RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import type { Client } from "../_api/clients.api";
+import type { ClientsSummary } from "../_api/clients.api";
 
 type SyncProgressCardProps = {
-  clients: Client[];
+  summary: ClientsSummary;
   isSyncing: boolean;
   isSyncActive: boolean;
 };
 
 function computeProgress(
-  clients: Client[],
+  summary: ClientsSummary,
   isSyncing: boolean,
   isSyncActive: boolean,
 ) {
-  const cnpjClients = clients.filter((c) => c.documentType === "CNPJ");
-  const total = cnpjClients.length;
+  const { totalCnpj, pendingCnpj } = summary;
 
-  if (total === 0) return 100;
+  if (totalCnpj === 0) return 100;
 
-  const pending = cnpjClients.filter((c) => c.status === "PENDENTE").length;
-  const processed = total - pending;
+  const processed = totalCnpj - pendingCnpj;
 
   if (isSyncing || isSyncActive) {
-    return Math.round((processed / total) * 100);
+    return Math.round((processed / totalCnpj) * 100);
   }
 
-  return pending === 0 ? 100 : Math.round((processed / total) * 100);
+  return pendingCnpj === 0 ? 100 : Math.round((processed / totalCnpj) * 100);
 }
 
 export function SyncProgressCard({
-  clients,
+  summary,
   isSyncing,
   isSyncActive,
 }: SyncProgressCardProps) {
-  const progress = computeProgress(clients, isSyncing, isSyncActive);
+  const progress = computeProgress(summary, isSyncing, isSyncActive);
   const isActive = isSyncing || isSyncActive;
 
   return (

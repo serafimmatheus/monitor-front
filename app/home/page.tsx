@@ -23,7 +23,7 @@ import { useSync } from "./_hook/use-sync";
 
 export default function HomePage() {
   const { logout } = useAuth();
-  const { clients, isLoading, error, hasPendingSync, refetch } = useClients();
+  const { summary, hasPendingSync, refetch } = useClients();
   const { planInfo, isLoading: isPlanLoading, refetch: refetchPlan } =
     usePlanLimits();
   const { sync, isSyncing, message, error: syncError, clearMessage } = useSync(
@@ -35,6 +35,7 @@ export default function HomePage() {
   const [importOpen, setImportOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [tableRefreshToken, setTableRefreshToken] = useState(0);
   const [feedback, setFeedback] = useState<{
     message: string | null;
     error: string | null;
@@ -78,13 +79,18 @@ export default function HomePage() {
     setFormOpen(true);
   }
 
-  function handleClientSaved() {
+  function refreshClientsData() {
     refetch();
+    setTableRefreshToken((current) => current + 1);
+  }
+
+  function handleClientSaved() {
+    refreshClientsData();
     setFeedback({ message: "Cliente salvo com sucesso.", error: null });
   }
 
   function handleClientDeleted() {
-    refetch();
+    refreshClientsData();
     setFeedback({ message: "Cliente excluido com sucesso.", error: null });
   }
 
@@ -146,20 +152,18 @@ export default function HomePage() {
               }}
             />
 
-            <StatsCards clients={clients} />
+            <StatsCards summary={summary} />
 
             <PlanInfoCard planInfo={planInfo} isLoading={isPlanLoading} />
 
             <SyncProgressCard
-              clients={clients}
+              summary={summary}
               isSyncing={isSyncing}
               isSyncActive={hasPendingSync}
             />
 
             <ClientsTable
-              clients={clients}
-              isLoading={isLoading}
-              error={error}
+              refreshToken={tableRefreshToken}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
@@ -180,7 +184,7 @@ export default function HomePage() {
         open={importOpen}
         onOpenChange={setImportOpen}
         onSuccess={(importMessage) => {
-          refetch();
+          refreshClientsData();
           setFeedback({ message: importMessage, error: null });
         }}
         onError={(importError) =>

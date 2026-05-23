@@ -1,27 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getClients, type Client } from "../_api/clients.api";
+import { getClientsSummary, type ClientsSummary } from "../_api/clients.api";
 import { usePolling } from "./use-polling";
 
 const SYNC_POLL_INTERVAL_MS = 3000;
 
-function hasPendingCnpjSync(clients: Client[]) {
-  return clients.some(
-    (client) =>
-      client.documentType === "CNPJ" && client.status === "PENDENTE",
-  );
-}
+const EMPTY_SUMMARY: ClientsSummary = {
+  ativos: 0,
+  pendentes: 0,
+  inaptos: 0,
+  totalCnpj: 0,
+  pendingCnpj: 0,
+  hasPendingSync: false,
+};
 
 export function useClients() {
-  const [clients, setClients] = useState<Client[]>([]);
+  const [summary, setSummary] = useState<ClientsSummary>(EMPTY_SUMMARY);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchClients = useCallback(async () => {
+  const fetchSummary = useCallback(async () => {
     try {
-      const data = await getClients();
-      setClients(Array.isArray(data) ? data : []);
+      const data = await getClientsSummary();
+      setSummary(data);
       setError(null);
     } catch {
       setError("Nao foi possivel carregar os clientes.");
@@ -30,19 +32,20 @@ export function useClients() {
     }
   }, []);
 
-  const hasPendingSync = hasPendingCnpjSync(clients);
-
   useEffect(() => {
-    fetchClients();
-  }, [fetchClients]);
+    fetchSummary();
+  }, [fetchSummary]);
 
-  usePolling(fetchClients, hasPendingSync ? SYNC_POLL_INTERVAL_MS : null);
+  usePolling(
+    fetchSummary,
+    summary.hasPendingSync ? SYNC_POLL_INTERVAL_MS : null,
+  );
 
   return {
-    clients,
+    summary,
     isLoading,
     error,
-    hasPendingSync,
-    refetch: fetchClients,
+    hasPendingSync: summary.hasPendingSync,
+    refetch: fetchSummary,
   };
 }

@@ -1,25 +1,11 @@
 "use client";
 
 import { CheckCircle2, MoreHorizontal, XCircle } from "lucide-react";
-import type { Client } from "../_api/clients.api";
+import type { ClientsSummary } from "../_api/clients.api";
 
 type StatsCardsProps = {
-  clients: Client[];
+  summary: ClientsSummary;
 };
-
-function countByStatus(clients: Client[]) {
-  const cnpjClients = clients.filter((c) => c.documentType === "CNPJ");
-
-  return {
-    ativos: cnpjClients.filter((c) => c.status === "ATIVA").length,
-    pendentes: cnpjClients.filter(
-      (c) => c.status === "PENDENTE" || c.status === "ERRO",
-    ).length,
-    inaptos: cnpjClients.filter((c) =>
-      ["INAPTA", "BAIXADA", "SUSPENSA"].includes(c.status),
-    ).length,
-  };
-}
 
 function formatNumber(value: number) {
   return value.toLocaleString("pt-BR");
@@ -66,14 +52,12 @@ function StatCard({
   );
 }
 
-export function StatsCards({ clients }: StatsCardsProps) {
-  const stats = countByStatus(clients);
-
+export function StatsCards({ summary }: StatsCardsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <StatCard
         label="ATIVOS"
-        value={stats.ativos}
+        value={summary.ativos}
         badge="+12% hoje"
         icon={<CheckCircle2 className="size-5 text-emerald-600" />}
         iconClassName="bg-emerald-50"
@@ -81,15 +65,15 @@ export function StatsCards({ clients }: StatsCardsProps) {
       />
       <StatCard
         label="PENDENTES"
-        value={stats.pendentes}
-        badge={`${stats.pendentes} aguardando`}
+        value={summary.pendentes}
+        badge={`${summary.pendentes} aguardando`}
         icon={<MoreHorizontal className="size-5 text-amber-600" />}
         iconClassName="bg-amber-50"
         badgeClassName="bg-amber-50 text-amber-700"
       />
       <StatCard
         label="INAPTOS"
-        value={stats.inaptos}
+        value={summary.inaptos}
         badge="Crítico"
         icon={<XCircle className="size-5 text-red-600" />}
         iconClassName="bg-red-50"
