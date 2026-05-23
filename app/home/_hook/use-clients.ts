@@ -9,6 +9,7 @@ const SYNC_POLL_INTERVAL_MS = 3000;
 const EMPTY_SUMMARY: ClientsSummary = {
   ativos: 0,
   pendentes: 0,
+  baixadas: 0,
   inaptos: 0,
   totalCnpj: 0,
   pendingCnpj: 0,

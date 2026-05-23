@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, MoreHorizontal, XCircle } from "lucide-react";
+import { Archive, CheckCircle2, MoreHorizontal, XCircle } from "lucide-react";
 import type { ClientsSummary } from "../_api/clients.api";
 
 type StatsCardsProps = {
@@ -54,7 +54,7 @@ function StatCard({
 
 export function StatsCards({ summary }: StatsCardsProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard
         label="ATIVOS"
         value={summary.ativos}
@@ -70,6 +70,14 @@ export function StatsCards({ summary }: StatsCardsProps) {
         icon={<MoreHorizontal className="size-5 text-amber-600" />}
         iconClassName="bg-amber-50"
         badgeClassName="bg-amber-50 text-amber-700"
+      />
+      <StatCard
+        label="BAIXADAS"
+        value={summary.baixadas}
+        badge={summary.baixadas > 0 ? "Atenção" : "Nenhuma"}
+        icon={<Archive className="size-5 text-rose-700" />}
+        iconClassName="bg-rose-50"
+        badgeClassName="bg-rose-50 text-rose-700"
       />
       <StatCard
         label="INAPTOS"

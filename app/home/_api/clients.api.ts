@@ -45,6 +45,7 @@ export interface ListClientsResult {
 export interface ClientsSummary {
   ativos: number;
   pendentes: number;
+  baixadas: number;
   inaptos: number;
   totalCnpj: number;
   pendingCnpj: number;
