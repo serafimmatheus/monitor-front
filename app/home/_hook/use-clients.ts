@@ -6,7 +6,14 @@ import { usePolling } from "./use-polling";
 
 const SYNC_POLL_INTERVAL_MS = 3000;
 
-export function useClients(isSyncActive: boolean) {
+function hasPendingCnpjSync(clients: Client[]) {
+  return clients.some(
+    (client) =>
+      client.documentType === "CNPJ" && client.status === "PENDENTE",
+  );
+}
+
+export function useClients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,11 +30,19 @@ export function useClients(isSyncActive: boolean) {
     }
   }, []);
 
+  const hasPendingSync = hasPendingCnpjSync(clients);
+
   useEffect(() => {
     fetchClients();
   }, [fetchClients]);
 
-  usePolling(fetchClients, isSyncActive ? SYNC_POLL_INTERVAL_MS : null);
+  usePolling(fetchClients, hasPendingSync ? SYNC_POLL_INTERVAL_MS : null);
 
-  return { clients, isLoading, error, refetch: fetchClients };
+  return {
+    clients,
+    isLoading,
+    error,
+    hasPendingSync,
+    refetch: fetchClients,
+  };
 }
