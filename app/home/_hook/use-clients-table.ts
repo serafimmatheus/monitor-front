@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   getClients,
   type Client,
+  type ClientStatus,
   type ClientsPagination,
 } from "../_api/clients.api";
 
@@ -17,6 +18,7 @@ type UseClientsTableOptions = {
 export function useClientsTable({ refreshToken = 0 }: UseClientsTableOptions = {}) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilters, setStatusFilters] = useState<ClientStatus[]>([]);
   const [page, setPage] = useState(1);
   const [clients, setClients] = useState<Client[]>([]);
   const [pagination, setPagination] = useState<ClientsPagination>({
@@ -50,6 +52,7 @@ export function useClientsTable({ refreshToken = 0 }: UseClientsTableOptions = {
         page,
         pageSize: PAGE_SIZE,
         search: debouncedSearch || undefined,
+        status: statusFilters.length > 0 ? statusFilters : undefined,
       });
 
       setClients(result.data);
@@ -67,7 +70,12 @@ export function useClientsTable({ refreshToken = 0 }: UseClientsTableOptions = {
     } finally {
       setIsLoading(false);
     }
-  }, [page, debouncedSearch]);
+  }, [page, debouncedSearch, statusFilters]);
+
+  const updateStatusFilters = useCallback((next: ClientStatus[]) => {
+    setStatusFilters(next);
+    setPage(1);
+  }, []);
 
   useEffect(() => {
     fetchClients();
@@ -80,6 +88,8 @@ export function useClientsTable({ refreshToken = 0 }: UseClientsTableOptions = {
     error,
     search,
     setSearch,
+    statusFilters,
+    setStatusFilters: updateStatusFilters,
     page,
     setPage,
     refetch: fetchClients,

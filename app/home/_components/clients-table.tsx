@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Factory,
-  Filter,
   MoreHorizontal,
   Pencil,
   Search,
@@ -30,6 +29,7 @@ import { cn } from "@/lib/utils";
 import type { Client } from "../_api/clients.api";
 import { useClientsTable } from "../_hook/use-clients-table";
 import { formatDocument } from "../_utils/format-document";
+import { ClientsStatusFilter } from "./clients-status-filter";
 import { StatusBadge } from "./status-badge";
 
 const COMPANY_ICONS = [Building2, Factory, ShoppingCart];
@@ -95,6 +95,8 @@ export function ClientsTable({
     error,
     search,
     setSearch,
+    statusFilters,
+    setStatusFilters,
     setPage,
   } = useClientsTable({ refreshToken });
 
@@ -140,9 +142,10 @@ export function ClientsTable({
               className="h-9 w-full pl-8 sm:w-64"
             />
           </div>
-          <Button variant="outline" size="icon" className="size-9 shrink-0">
-            <Filter className="size-4" />
-          </Button>
+          <ClientsStatusFilter
+            value={statusFilters}
+            onChange={setStatusFilters}
+          />
         </div>
       </div>
 

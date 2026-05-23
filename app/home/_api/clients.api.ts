@@ -52,14 +52,30 @@ export interface ClientsSummary {
   hasPendingSync: boolean;
 }
 
+export type ClientStatus =
+  | "ATIVA"
+  | "PENDENTE"
+  | "BAIXADA"
+  | "INAPTA"
+  | "SUSPENSA"
+  | "ERRO";
+
 export interface ListClientsParams {
   page?: number;
   pageSize?: number;
   search?: string;
+  status?: ClientStatus[];
 }
 
 export async function getClients(params: ListClientsParams = {}) {
-  const { data } = await api.get<ListClientsResult>("/clients", { params });
+  const { status, ...rest } = params;
+
+  const { data } = await api.get<ListClientsResult>("/clients", {
+    params: {
+      ...rest,
+      ...(status && status.length > 0 ? { status: status.join(",") } : {}),
+    },
+  });
   return data;
 }
 
