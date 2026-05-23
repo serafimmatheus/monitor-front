@@ -1,9 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import { isAxiosError } from "axios";
 import { syncClients } from "../_api/clients.api";
 
-export function useSync(onSuccess?: (queued: number) => void) {
+function getSyncErrorMessage(error: unknown) {
+  if (
+    isAxiosError(error) &&
+    error.response?.data &&
+    typeof error.response.data === "object" &&
+    "message" in error.response.data &&
+    typeof error.response.data.message === "string"
+  ) {
+    return error.response.data.message;
+  }
+
+  return "Nao foi possivel iniciar a sincronizacao.";
+}
+
+export function useSync(
+  onSuccess?: (queued: number) => void,
+  onPlanChange?: () => void,
+) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,12 +38,22 @@ export function useSync(onSuccess?: (queued: number) => void) {
           : "Nenhum CNPJ para sincronizar.",
       );
       onSuccess?.(result.queued);
-    } catch {
-      setError("Nao foi possivel iniciar a sincronizacao.");
+      onPlanChange?.();
+    } catch (syncError) {
+      setError(getSyncErrorMessage(syncError));
     } finally {
       setIsSyncing(false);
     }
   }
 
-  return { sync, isSyncing, message, error, clearMessage: () => setMessage(null) };
+  return {
+    sync,
+    isSyncing,
+    message,
+    error,
+    clearMessage: () => {
+      setMessage(null);
+      setError(null);
+    },
+  };
 }

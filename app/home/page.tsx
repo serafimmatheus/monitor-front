@@ -11,19 +11,24 @@ import { DashboardFooter } from "./_components/dashboard-footer";
 import { DashboardSidebar } from "./_components/dashboard-sidebar";
 import { DeleteClientDialog } from "./_components/delete-client-dialog";
 import { ImportClientsDialog } from "./_components/import-clients-dialog";
+import { PlanInfoCard } from "./_components/plan-info-card";
 import { StatsCards } from "./_components/stats-cards";
 import { SyncAlert } from "./_components/sync-alert";
 import { SyncButton } from "./_components/sync-button";
 import { SyncProgressCard } from "./_components/sync-progress-card";
 import type { Client } from "./_api/clients.api";
 import { useClients } from "./_hook/use-clients";
+import { usePlanLimits } from "./_hook/use-plan-limits";
 import { useSync } from "./_hook/use-sync";
 
 export default function HomePage() {
   const { logout } = useAuth();
   const { clients, isLoading, error, hasPendingSync, refetch } = useClients();
+  const { planInfo, isLoading: isPlanLoading, refetch: refetchPlan } =
+    usePlanLimits();
   const { sync, isSyncing, message, error: syncError, clearMessage } = useSync(
     () => refetch(),
+    () => refetchPlan(),
   );
 
   const [formOpen, setFormOpen] = useState(false);
@@ -34,6 +39,29 @@ export default function HomePage() {
     message: string | null;
     error: string | null;
   }>({ message: null, error: null });
+
+  function getSyncDisabledReason() {
+    if (!planInfo) {
+      return undefined;
+    }
+
+    if (planInfo.maxSyncsPerMonth === 0) {
+      return "Plano gratuito nao permite sincronizacao. Faca upgrade para Starter ou Pro.";
+    }
+
+    if (!planInfo.canSync) {
+      return `Limite de ${planInfo.maxSyncsPerMonth} sincronizacoes por mes atingido.`;
+    }
+
+    return undefined;
+  }
+
+  const canSync = planInfo?.canSync ?? false;
+  const allowImport = planInfo?.allowImport ?? false;
+  const syncDisabledReason = getSyncDisabledReason();
+  const importDisabledReason = allowImport
+    ? undefined
+    : "Importacao disponivel apenas no plano Pro (R$ 100/mes).";
 
   function handleEdit(client: Client) {
     setSelectedClient(client);
@@ -88,14 +116,21 @@ export default function HomePage() {
                 >
                   <Bell className="size-5" />
                 </Button>
-                <SyncButton onSync={sync} isSyncing={isSyncing} />
+                <SyncButton
+                  onSync={sync}
+                  isSyncing={isSyncing}
+                  isSyncActive={hasPendingSync}
+                  canSync={canSync}
+                  disabledReason={syncDisabledReason}
+                />
                 <Button
                   variant="outline"
                   size="icon"
                   className="size-9"
                   onClick={() => setImportOpen(true)}
+                  disabled={!allowImport}
                   aria-label="Importar planilha"
-                  title="Importar planilha"
+                  title={importDisabledReason ?? "Importar planilha"}
                 >
                   <Upload className="size-4" />
                 </Button>
@@ -112,6 +147,8 @@ export default function HomePage() {
             />
 
             <StatsCards clients={clients} />
+
+            <PlanInfoCard planInfo={planInfo} isLoading={isPlanLoading} />
 
             <SyncProgressCard
               clients={clients}
